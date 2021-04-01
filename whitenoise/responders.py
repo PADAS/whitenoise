@@ -14,8 +14,14 @@ from wsgiref.headers import Headers
 
 Response = namedtuple("Response", ("status", "headers", "file"))
 
+allow_header = ("Allow", "GET, HEAD, OPTIONS")
+
 NOT_ALLOWED_RESPONSE = Response(
-    status=HTTPStatus.METHOD_NOT_ALLOWED, headers=[("Allow", "GET, HEAD")], file=None
+    status=HTTPStatus.METHOD_NOT_ALLOWED, headers=[allow_header], file=None
+)
+
+OPTIONS_RESPONSE = Response(
+    status=HTTPStatus.NO_CONTENT, headers=[allow_header], file=None
 )
 
 # Headers which should be returned with a 304 Not Modified response as
@@ -40,8 +46,10 @@ class StaticFile(object):
         self.alternatives = self.get_alternatives(headers, files)
 
     def get_response(self, method, request_headers):
-        if method not in ("GET", "HEAD"):
+        if method not in ("GET", "HEAD", "OPTIONS"):
             return NOT_ALLOWED_RESPONSE
+        if method == "OPTIONS":
+            return OPTIONS_RESPONSE
         if self.is_not_modified(request_headers):
             return self.not_modified_response
         path, headers = self.get_path_and_headers(request_headers)
